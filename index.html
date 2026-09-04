@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adherence Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#0a1f1c;
+    --bg-1:#0f2e28;
+    --bg-2:#123a30;
+    --panel:#132e29;
+    --panel-line:rgba(234,244,241,0.09);
+    --text:#eaf4f1;
+    --text-dim:#9fb8b1;
+    --mint:#3fc79a;
+    --mint-soft:rgba(63,199,154,0.14);
+    --amber:#f0a75c;
+    --amber-soft:rgba(240,167,92,0.14);
+    --danger:#e0654f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% -10%, #1a4a3e 0%, transparent 45%),
+      radial-gradient(circle at 100% 0%, #0e3630 0%, transparent 40%),
+      linear-gradient(160deg, var(--bg-0), var(--bg-1) 55%, var(--bg-2));
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    padding:0 0 60px;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:0 24px;}
+
+  header.top{
+    padding:44px 24px 28px;
+    max-width:920px;
+    margin:0 auto;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:20px;
+    border-bottom:1px solid var(--panel-line);
+  }
+  h1.greet{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:clamp(28px, 5vw, 40px);
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  h1.greet span{color:var(--mint);}
+  .meta{
+    display:flex;
+    gap:32px;
+    flex-wrap:wrap;
+  }
+  .meta .item{text-align:left;}
+  .meta .label{font-size:12px;color:var(--text-dim);margin-bottom:4px;letter-spacing:0.02em;}
+  .meta .value{font-family:'IBM Plex Mono', monospace;font-size:18px;font-weight:600;}
+
+  .now-running{
+    max-width:920px;
+    margin:24px auto 0;
+    padding:0 24px;
+  }
+  .running-card{
+    background:linear-gradient(135deg, rgba(63,199,154,0.16), rgba(63,199,154,0.04));
+    border:1px solid rgba(63,199,154,0.35);
+    border-radius:14px;
+    padding:18px 22px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+  }
+  .running-card.idle{
+    background:rgba(234,244,241,0.03);
+    border:1px dashed var(--panel-line);
+  }
+  .running-card .dot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--mint);
+    box-shadow:0 0 0 5px rgba(63,199,154,0.18);
+    flex:none;
+  }
+  .running-card.idle .dot{background:var(--text-dim);box-shadow:none;}
+  .running-left{display:flex;align-items:center;gap:12px;}
+  .running-label{font-size:13px;color:var(--text-dim);}
+  .running-name{font-weight:600;font-size:16px;}
+  .running-timer{font-family:'IBM Plex Mono', monospace;font-size:22px;font-weight:600;color:var(--mint);}
+  .running-card.idle .running-timer{color:var(--text-dim);}
+
+  .sections{
+    max-width:920px;
+    margin:32px auto 0;
+    padding:0 24px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:20px;
+  }
+  @media (max-width:680px){
+    .sections{grid-template-columns:1fr;}
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    border-radius:16px;
+    padding:22px;
+  }
+  .panel h2{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:20px;
+    margin:0 0 16px;
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:12px 0;
+    border-top:1px solid var(--panel-line);
+    gap:12px;
+  }
+  .row:first-of-type{border-top:none;}
+  .row .name{font-size:14.5px;flex:1;min-width:0;}
+  .row .time{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13.5px;
+    color:var(--text-dim);
+    min-width:74px;
+    text-align:right;
+  }
+  .row.active .name{color:var(--mint);font-weight:600;}
+  .row.active .time{color:var(--mint);}
+  .btns{display:flex;gap:6px;}
+  button.mini{
+    border:none;
+    border-radius:8px;
+    padding:7px 12px;
+    font-size:12.5px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Inter', sans-serif;
+    transition:transform .08s ease, opacity .15s ease;
+  }
+  button.mini:active{transform:scale(0.96);}
+  button.start{background:var(--mint-soft);color:var(--mint);}
+  button.start:hover{background:rgba(63,199,154,0.24);}
+  button.stop{background:var(--amber-soft);color:var(--amber);}
+  button.stop:hover{background:rgba(240,167,92,0.24);}
+  button.mini:disabled{opacity:0.35;cursor:not-allowed;}
+
+  .summary{
+    max-width:920px;
+    margin:32px auto 0;
+    padding:0 24px;
+  }
+  .summary-inner{
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    border-radius:16px;
+    padding:26px;
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:16px;
+  }
+  @media (max-width:680px){
+    .summary-inner{grid-template-columns:1fr 1fr;}
+  }
+  .stat{text-align:center;padding:6px 0;}
+  .stat .label{font-size:12px;color:var(--text-dim);margin-bottom:8px;letter-spacing:0.02em;}
+  .stat .value{font-family:'IBM Plex Mono', monospace;font-size:22px;font-weight:600;}
+  .stat.total .value{color:var(--mint);}
+
+  footer{
+    max-width:920px;
+    margin:32px auto 0;
+    padding:0 24px;
+    display:flex;
+    justify-content:center;
+  }
+  button.logout{
+    background:transparent;
+    border:1px solid rgba(224,101,79,0.5);
+    color:var(--danger);
+    padding:11px 26px;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    font-family:'Inter', sans-serif;
+  }
+  button.logout:hover{background:rgba(224,101,79,0.1);}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1 class="greet">Welcome, <span>Devvrat</span></h1>
+  <div class="meta">
+    <div class="item">
+      <div class="label">Login Time</div>
+      <div class="value" id="loginTimeDisplay">--:--:--</div>
+    </div>
+    <div class="item">
+      <div class="label">Total Duration</div>
+      <div class="value" id="totalDuration">00:00:00</div>
+    </div>
+  </div>
+</header>
+
+<div class="now-running">
+  <div class="running-card idle" id="runningCard">
+    <div class="running-left">
+      <div class="dot"></div>
+      <div>
+        <div class="running-label">Currently running</div>
+        <div class="running-name" id="runningName">Nothing — pick a task or break</div>
+      </div>
+    </div>
+    <div class="running-timer" id="runningTimer">00:00:00</div>
+  </div>
+</div>
+
+<div class="sections">
+  <div class="panel">
+    <h2>Task</h2>
+    <div id="taskList"></div>
+  </div>
+  <div class="panel">
+    <h2>Break</h2>
+    <div id="breakList"></div>
+  </div>
+</div>
+
+<div class="summary">
+  <div class="summary-inner">
+    <div class="stat"><div class="label">Task Time</div><div class="value" id="sumTask">00:00:00</div></div>
+    <div class="stat"><div class="label">Break Time</div><div class="value" id="sumBreak">00:00:00</div></div>
+    <div class="stat total"><div class="label">Total Duration</div><div class="value" id="sumTotal">00:00:00</div></div>
+    <div class="stat"><div class="label">Idle Time</div><div class="value" id="sumIdle">00:00:00</div></div>
+  </div>
+</div>
+
+<footer>
+  <button class="logout" id="logoutBtn">Logout &amp; reset today</button>
+</footer>
+
+<script>
+const TASKS = ["Quantitative Aptitude","Reasoning","English","General Science","General Knowledge"];
+const BREAKS = ["Lunch Break","Games","Break 1","Break 2"];
+const STORAGE_KEY = "adherence-tracker-state";
+
+function todayStr(d = new Date()){
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+function freshState(){
+  const accumulated = {};
+  [...TASKS, ...BREAKS].forEach(n => accumulated[n] = 0);
+  return {
+    date: todayStr(),
+    loginTime: Date.now(),
+    accumulated,          // ms accumulated per item, not counting an active running segment
+    running: null         // { name, type, since } since = timestamp ms
+  };
+}
+
+function loadState(){
+  let raw;
+  try{ raw = JSON.parse(localStorage.getItem(STORAGE_KEY)); }catch(e){ raw = null; }
+  if(!raw || raw.date !== todayStr()){
+    raw = freshState();
+    saveState(raw);
+  }
+  return raw;
+}
+
+function saveState(s){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+}
+
+let state = loadState();
+
+function fmt(ms){
+  if(ms < 0) ms = 0;
+  const totalSec = Math.floor(ms/1000);
+  const h = String(Math.floor(totalSec/3600)).padStart(2,"0");
+  const m = String(Math.floor((totalSec%3600)/60)).padStart(2,"0");
+  const s = String(totalSec%60).padStart(2,"0");
+  return `${h}:${m}:${s}`;
+}
+
+function itemTotal(name){
+  let ms = state.accumulated[name] || 0;
+  if(state.running && state.running.name === name){
+    ms += Date.now() - state.running.since;
+  }
+  return ms;
+}
+
+function typeTotal(type, list){
+  let ms = 0;
+  list.forEach(name => ms += itemTotal(name));
+  return ms;
+}
+
+function buildRows(list, type, container){
+  container.innerHTML = "";
+  list.forEach(name => {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.dataset.name = name;
+
+    const nameEl = document.createElement("div");
+    nameEl.className = "name";
+    nameEl.textContent = name;
+
+    const timeEl = document.createElement("div");
+    timeEl.className = "time";
+    timeEl.id = "time-" + cssId(name);
+
+    const btns = document.createElement("div");
+    btns.className = "btns";
+
+    const startBtn = document.createElement("button");
+    startBtn.className = "mini start";
+    startBtn.textContent = "Start";
+    startBtn.onclick = () => startItem(name, type);
+
+    const stopBtn = document.createElement("button");
+    stopBtn.className = "mini stop";
+    stopBtn.textContent = "Stop";
+    stopBtn.onclick = () => stopItem(name);
+
+    btns.appendChild(startBtn);
+    btns.appendChild(stopBtn);
+
+    row.appendChild(nameEl);
+    row.appendChild(timeEl);
+    row.appendChild(btns);
+    container.appendChild(row);
+  });
+}
+
+function cssId(name){
+  return name.replace(/[^a-z0-9]/gi, "_");
+}
+
+function startItem(name, type){
+  // stop whatever is currently running, accumulating its time
+  if(state.running){
+    const elapsed = Date.now() - state.running.since;
+    state.accumulated[state.running.name] = (state.accumulated[state.running.name] || 0) + elapsed;
+  }
+  state.running = { name, type, since: Date.now() };
+  saveState(state);
+  render();
+}
+
+function stopItem(name){
+  if(state.running && state.running.name === name){
+    const elapsed = Date.now() - state.running.since;
+    state.accumulated[name] = (state.accumulated[name] || 0) + elapsed;
+    state.running = null;
+    saveState(state);
+    render();
+  }
+}
+
+function logout(){
+  if(!confirm("Logout and reset today's tracking? This clears all recorded time for today.")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  state = freshState();
+  saveState(state);
+  render();
+}
+
+const taskListEl = document.getElementById("taskList");
+const breakListEl = document.getElementById("breakList");
+buildRows(TASKS, "task", taskListEl);
+buildRows(BREAKS, "break", breakListEl);
+document.getElementById("logoutBtn").onclick = logout;
+
+function render(){
+  // day rollover check
+  if(state.date !== todayStr()){
+    state = freshState();
+    saveState(state);
+  }
+
+  document.getElementById("loginTimeDisplay").textContent =
+    new Date(state.loginTime).toLocaleTimeString([], {hour12:false});
+
+  const totalDuration = Date.now() - state.loginTime;
+  document.getElementById("totalDuration").textContent = fmt(totalDuration);
+
+  [...TASKS, ...BREAKS].forEach(name => {
+    const el = document.getElementById("time-" + cssId(name));
+    if(el) el.textContent = fmt(itemTotal(name));
+  });
+
+  // active row highlight + button states
+  document.querySelectorAll(".row").forEach(row => {
+    const name = row.dataset.name;
+    const isActive = state.running && state.running.name === name;
+    row.classList.toggle("active", !!isActive);
+    row.querySelector(".start").disabled = !!isActive;
+    row.querySelector(".stop").disabled = !isActive;
+  });
+
+  const card = document.getElementById("runningCard");
+  const nameEl = document.getElementById("runningName");
+  const timerEl = document.getElementById("runningTimer");
+  if(state.running){
+    card.classList.remove("idle");
+    nameEl.textContent = state.running.name;
+    timerEl.textContent = fmt(Date.now() - state.running.since);
+  } else {
+    card.classList.add("idle");
+    nameEl.textContent = "Nothing — pick a task or break";
+    timerEl.textContent = "00:00:00";
+  }
+
+  const taskMs = typeTotal("task", TASKS);
+  const breakMs = typeTotal("break", BREAKS);
+  document.getElementById("sumTask").textContent = fmt(taskMs);
+  document.getElementById("sumBreak").textContent = fmt(breakMs);
+  document.getElementById("sumTotal").textContent = fmt(totalDuration);
+  document.getElementById("sumIdle").textContent = fmt(Math.max(0, totalDuration - taskMs - breakMs));
+}
+
+render();
+setInterval(render, 1000);
+
+// keep in sync if the same app is open in another tab
+window.addEventListener("storage", (e) => {
+  if(e.key === STORAGE_KEY){
+    state = loadState();
+    render();
+  }
+});
+</script>
+</body>
+</html>
